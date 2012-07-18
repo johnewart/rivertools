@@ -22,10 +22,15 @@ public class Extractor {
 					System.out.println("Couldn't process file: " + e.toString()); 
           e.printStackTrace();
 				}
-			}
+			} 
 			
 		} else { 
-			System.out.println("You need to provide a tile file name");
+			if("worker".equals(args[0]))
+			{
+				RiverExtractionWorker worker = new RiverExtractionWorker();
+			} else {
+				System.out.println("You need to provide a tile file name");
+			}
 		}
 	}
 }

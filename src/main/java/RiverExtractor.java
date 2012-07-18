@@ -14,6 +14,7 @@ import java.util.Arrays;
 
 import javax.imageio.ImageIO;
 import com.sun.media.jai.codec.*;
+import javax.imageio.spi.IIORegistry;
 
 import com.jhlabs.image.DespeckleFilter;
 
@@ -69,7 +70,6 @@ public class RiverExtractor {
         g2.drawImage(bi, 0, 0, null);
 
         ByteArrayOutputStream ostr = new ByteArrayOutputStream(); 
-        ImageIO.write(dest, "tiff", new File("export.tif")); 
         ImageIO.write(dest, "tiff", ostr);
         int width = bi.getWidth(); 
         int height = bi.getHeight(); 
