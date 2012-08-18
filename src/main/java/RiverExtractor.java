@@ -1,5 +1,6 @@
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Color;
 import java.awt.image.BandedSampleModel;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
@@ -12,38 +13,29 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-import javax.imageio.ImageIO;
 import com.sun.media.jai.codec.*;
+import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
+
+import com.tomgibara.imageio.tiff.*; 
 
 import com.jhlabs.image.DespeckleFilter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
 public class RiverExtractor { 
 
-  private File tile; 
+  final static Logger logger = LoggerFactory.getLogger(RiverExtractor.class);
+	private File tile; 
 
   public RiverExtractor(File tile)
   {
     this.tile = tile; 
     IIORegistry registry = IIORegistry.getDefaultInstance(); 
-    registry.registerServiceProvider(new com.sun.media.imageioimpl.plugins.tiff.TIFFImageWriterSpi());
-    registry.registerServiceProvider(new com.sun.media.imageioimpl.plugins.tiff.TIFFImageReaderSpi());
-  }
-
-  private BufferedImage deepCopy(BufferedImage bi) {
-     ColorModel cm = bi.getColorModel();
-     boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-     WritableRaster raster = bi.copyData(null);
-     return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
-  }
-
-  private BufferedImage byteToBuffered(int[] pixels, int width, int height) throws IllegalArgumentException {
-     DataBufferInt dbuf = new DataBufferInt(pixels, width * height);
-     BandedSampleModel model = new BandedSampleModel(DataBuffer.TYPE_USHORT, width, height, 1);
-     WritableRaster raster = Raster.createWritableRaster(model, dbuf, new Point(0,0));
-     BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_GRAY);
-     image.setData(raster);
-     return image;
+    registry.registerServiceProvider(new com.tomgibara.imageio.impl.tiff.TIFFImageWriterSpi());
+    registry.registerServiceProvider(new com.tomgibara.imageio.impl.tiff.TIFFImageReaderSpi());
   }
 
   public BufferedImage extractChannels()
@@ -52,22 +44,19 @@ public class RiverExtractor {
     {
       try { 
         String fname = tile.getAbsolutePath();
-        System.out.println("Opening File: " + fname);
+        logger.debug("Opening File: " + fname);
         SeekableStream s = new FileSeekableStream(tile);
-        String[] formats = ImageIO.getReaderFormatNames(); 
-        for(int i = 0; i < formats.length; i++) 
-        {
-          System.out.println(formats[i]);
-        }
 
-        TIFFDecodeParam param = null;
-        ImageDecoder dec = ImageCodec.createImageDecoder("tiff", s, param);
-        System.out.println("Number of images in this TIFF: " + dec.getNumPages());
         BufferedImage bi = ImageIO.read(new File(fname));
-        System.out.println("Buffered image: " + bi);
         BufferedImage dest = new BufferedImage(bi.getWidth(),bi.getHeight(),BufferedImage.TYPE_BYTE_GRAY);
-        Graphics2D g2 = dest.createGraphics();
-        g2.drawImage(bi, 0, 0, null);
+
+				// Generate a grayscale image that doesn't require an AWT display
+				for(int y = 0; y < bi.getHeight(); y++){
+	        for(int x = 0; x < bi.getWidth(); x++){
+						Color c = new Color(bi.getRGB(x,y) & 0x00ffffff);
+						dest.setRGB(x, y, c.getRGB());
+					}
+				}
 
         ByteArrayOutputStream ostr = new ByteArrayOutputStream(); 
         ImageIO.write(dest, "tiff", ostr);
@@ -82,17 +71,16 @@ public class RiverExtractor {
         int[] output = new int[data.length];
 
 
-        System.out.println("Length: " + data.length);
-        System.out.println("Width: " + bi.getWidth()); 
-        System.out.println("Height: " + bi.getHeight()); 
-        System.out.println("Header size: " + headersize); 
+        logger.debug("Length: " + data.length);
+        logger.debug("Width: " + bi.getWidth()); 
+        logger.debug("Height: " + bi.getHeight()); 
+        logger.debug("Header size: " + headersize); 
 
 
         double max_entropy = -99999; 
 
         for(int y = 1; y < height-1; y++) 
         {
-          System.out.printf("%d done...\n", y);
           for (int x = 1; x < width-1; x++) 
           {
             int offset = y * width + x;
@@ -133,10 +121,10 @@ public class RiverExtractor {
           }
         }
 
-        System.out.println("Max entropy: " + max_entropy);
+        logger.debug("Max entropy: " + max_entropy);
         double scalefactor = 255.0 / max_entropy;
-        System.out.println("Scale: " + scalefactor);
-        System.out.println("E Length: " + entropy.length);
+        logger.debug("Scale: " + scalefactor);
+        logger.debug("E Length: " + entropy.length);
 
         double point; 
         for( int i = 0; i < entropy.length;  i++) 
@@ -152,24 +140,76 @@ public class RiverExtractor {
 
         }
 
-        BufferedImage outimage = byteToBuffered(output, width, height);
-        BufferedImage filtered = deepCopy(outimage);
+				/* Iterate over each pixel again, checking the NxN grid around it
+				 * and change the color to that of the majority of the box
+				 *
+				 * cellwidth = N
+				 */
+
+				int cellwidth = 5;
+				int inset = cellwidth / 2;
+				double threshold = 0.25;
+				double hithreshold = ((cellwidth * cellwidth)* (1-threshold)) * 65535;
+				double lothreshold = ((cellwidth * cellwidth)* (threshold)) * 65535;
+				for (int x = inset; x < bi.getWidth() - inset; x++) 
+				{
+					for (int y = inset; y < bi.getHeight() - inset; y++) 
+					{
+            int offset = y * width + x;
+						long sum = 0;
+						for (int yoff = -inset; yoff <= inset; yoff++) 
+            {
+              for (int xoff = -inset; xoff <= inset; xoff++) 
+              {
+                sum += output[offset + (width * yoff) + xoff];
+              }
+            } 
+
+						if(output[offset] == 0 && sum >= hithreshold)
+						{
+							output[offset] = 65535;
+						} 
+						
+						if(output[offset] == 65535 && sum <= lothreshold) {
+							output[offset] = 0;
+						}
+					}
+				}
+
+        BufferedImage outimage = ImageTools.byteToBuffered(output, width, height);
+        //BufferedImage filtered = ImageTools.deepCopy(outimage);
+
+				int w = outimage.getWidth();
+				int h = outimage.getHeight();
+				BufferedImage filtered = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+
+				for(int row = 0; row < h; row++)
+				{
+					for(int col = 0; col < w; col++) 
+					{
+						Color c = new Color(outimage.getRGB(col,row) & 0x00ffffff);
+						filtered.setRGB(col, row, c.getRGB());
+					}
+				}
+
+
+				/*
         DespeckleFilter df = new DespeckleFilter(); 
        
-        System.out.println("Filtering..."); 
+        logger.debug("Filtering..."); 
         for(int i = 1; i <= 10; i++) 
         {
-          System.out.println(i + "...");
+          logger.debug(i + "...");
           df.filter(filtered, filtered);
-        }
+        }*/
 
         return filtered; 
       } catch (IOException ioe) { 
-        System.out.println("oops!");
+        logger.debug("Error processing tile: " + ioe.toString());
         return null;
       }
     } else { 
-      System.out.println("The tile is null...");
+      logger.debug("The tile is null...");
       return null;
     }
     

@@ -1,6 +1,10 @@
 <project>
    <modelVersion>4.0.0</modelVersion>
-   <groupId>net.johnewart</groupId>
+	 <groupId>net.johnewart</groupId>
+	 <organization>
+		<name>johnewart.net</name>
+	 </organization>
+
    <dependencies>
       <dependency>
         <groupId>javax.media.jai</groupId>
@@ -8,10 +12,15 @@
         <version>1.1.3</version>
       </dependency>
       <dependency>
-        <groupId>javax.media.jai</groupId>
+				<groupId>javax.media.jai</groupId>
         <artifactId>com.springsource.javax.media.jai.codec</artifactId>
         <version>1.1.3</version>
-      </dependency>
+			</dependency>
+			<dependency>
+				<groupId>com.tomgibara.imageio</groupId>
+				<artifactId>imageio-tiff</artifactId>
+				<version>1.0</version>
+			</dependency>
       <dependency>
         <groupId>com.jhlabs</groupId>
         <artifactId>filters</artifactId>
@@ -26,9 +35,54 @@
         <groupId>com.googlecode.json-simple</groupId>
         <artifactId>json-simple</artifactId>
         <version>1.1.1</version>
-      </dependency>
+			</dependency>
+			<dependency>
+				<groupId>ch.qos.logback</groupId>
+				<artifactId>logback-classic</artifactId>
+				<version>1.0.6</version>
+			</dependency>
+			<dependency>
+				<groupId>org.geotools</groupId>
+				<artifactId>gt-geotiff</artifactId>
+				<version>9-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.geotools</groupId>
+				<artifactId>gt-coverage</artifactId>
+				<version>9-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.geotools</groupId>
+				<artifactId>gt-opengis</artifactId>
+				<version>9-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.geotools</groupId>
+				<artifactId>gt-referencing</artifactId>
+				<version>9-SNAPSHOT</version>
+			</dependency>
+			<dependency>
+				<groupId>org.geotools</groupId>
+				<artifactId>gt-epsg-hsql</artifactId>
+				<version>9-SNAPSHOT</version>
+			</dependency>
     </dependencies>
-    <repositories>
+		<repositories>
+			<repository>
+				<id>opengeo</id>
+				<name>OpenGEO.org</name>
+				<layout>default</layout>
+				<url>http://repo.opengeo.org/</url>
+			</repository>
+			<repository>
+				<id>tomgibara</id>
+				<name>Tom Gibara Maven Repository</name>
+				<layout>default</layout>
+				<url>http://www.tomgibara.com/maven/repo/</url>
+				<snapshots>
+					<enabled>false</enabled>
+				</snapshots>
+			</repository>
       <repository>
         <id>com.springsource.repository.bundles.external</id>
         <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
@@ -38,18 +92,59 @@
         <id>net.johnewart.repository</id>
         <name>John Ewart's Repository</name>
         <url>http://code.johnewart.net/maven</url>
-      </repository>
-       
+			</repository>
     </repositories>
 
     <build>
-      <plugins>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-shade-plugin</artifactId>
+					<version>1.3.1</version>
+					<executions>
+						<execution>
+							<phase>package</phase>
+							<goals>
+								<goal>shade</goal>
+							</goals>
+							<configuration>
+								<transformers>
+									<!-- This bit sets the main class for the executable jar as you otherwise -->
+									<!-- would with the assembly plugin                                       -->
+									<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+									<manifestEntries>
+										<Main-Class>Extractor</Main-Class>
+										<Implementation-Vendor>John Ewart</Implementation-Vendor>
+										<Implementation-Vendor-Id>net.johnewart</Implementation-Vendor-Id>
+										<Implementation-Version>0.1</Implementation-Version>
+									</manifestEntries>
+									</transformer>
+									<!-- This bit merges the various GeoTools META-INF/services files         -->
+									<transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+								</transformers>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.felix</groupId>
+					<artifactId>maven-bundle-plugin</artifactId>
+					<extensions>true</extensions>
+					<configuration>
+						<instructions>
+							<Implementation-Vendor>John Ewart</Implementation-Vendor>
+						  <Implementation-Vendor-Id>net.johnewart</Implementation-Vendor-Id>
+						</instructions>
+					</configuration>
+				</plugin>
         <plugin>
           <artifactId>maven-assembly-plugin</artifactId>
           <configuration>
             <archive>
               <manifest>
-                <mainClass>Extractor</mainClass>
+								<mainClass>Extractor</mainClass>
+								<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+								<addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
               </manifest>
             </archive>
             <descriptorRefs>
