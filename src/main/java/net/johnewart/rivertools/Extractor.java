@@ -1,51 +1,20 @@
-import java.io.*; 
-import java.awt.image.BufferedImage;
+package net.johnewart.rivertools;
+
+import org.geotools.coverage.CoverageFactoryFinder;
+import org.geotools.coverage.grid.GridCoverage2D;
+import org.geotools.coverage.grid.GridCoverageFactory;
+import org.geotools.gce.geotiff.GeoTiffReader;
+import org.geotools.gce.geotiff.GeoTiffWriter;
+import org.geotools.geometry.Envelope2D;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
-import com.sun.media.jai.codec.*;
-
-import com.tomgibara.imageio.tiff.*; 
-
-import org.geotools.data.DataStore;
-import org.geotools.data.DataStoreFactorySpi;
-import org.geotools.data.DefaultTransaction;
-import org.geotools.data.FeatureWriter;
-import org.geotools.data.FileDataStore;
-import org.geotools.data.FileDataStoreFinder;
-import org.geotools.data.Query;
-import org.geotools.data.Transaction;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureIterator;
-import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.data.simple.SimpleFeatureStore;
-
-import org.geotools.coverage.grid.GridCoverage2D;
-import org.geotools.coverage.grid.GridCoverageFactory;
-import org.geotools.gce.geotiff.GeoTiffFormat;
-import org.geotools.gce.geotiff.GeoTiffReader;
-import org.geotools.gce.geotiff.GeoTiffWriter;
-import org.geotools.geometry.DirectPosition2D;
-import org.geotools.geometry.GeneralEnvelope;
-import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.opengis.coverage.grid.GridCoverage;
-import org.opengis.coverage.grid.GridCoverageReader;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
-import org.opengis.geometry.MismatchedDimensionException;
-import org.geotools.referencing.CRS;
-import org.opengis.referencing.NoSuchAuthorityCodeException;
-import org.opengis.referencing.FactoryException;
-import org.geotools.coverage.CoverageFactoryFinder;
-import org.geotools.coverage.grid.GridCoverageFactory;
-import org.opengis.geometry.Envelope;
-import org.geotools.geometry.Envelope2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
 
 public class Extractor {
-	public static void main(String[] args)
+	public static void rain(String[] args)
 	{
 		try { 
 			// Load up TIFF reader / writer
@@ -78,7 +47,7 @@ public class Extractor {
 		}
 
 	}
-	public static void rain(String[] args)
+	public static void main(String[] args)
 	{
 		if(args.length >= 2) 
 		{
@@ -119,12 +88,7 @@ public class Extractor {
 			} 
 			
 		} else { 
-			if("worker".equals(args[0]))
-			{
-				RiverExtractionWorker worker = new RiverExtractionWorker();
-			} else {
-				System.out.println("You need to provide a tile file name");
-			}
+			RiverExtractionWorker worker = new RiverExtractionWorker();
 		}
 	}
 }
