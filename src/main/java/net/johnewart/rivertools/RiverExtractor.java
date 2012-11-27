@@ -9,6 +9,7 @@ import java.util.Arrays;
 
 import com.jhlabs.image.DespeckleFilter;
 import com.sun.media.jai.codec.*;
+import net.johnewart.rivertools.utils.ImageTools;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
@@ -149,7 +150,7 @@ public class RiverExtractor {
                 }
 
                 BufferedImage outimage = ImageTools.byteToBuffered(output, width, height);
-                //BufferedImage filtered = net.johnewart.rivertools.ImageTools.deepCopy(outimage);
+                //BufferedImage filtered = net.johnewart.rivertools.utils.ImageTools.deepCopy(outimage);
 
                 int w = outimage.getWidth();
                 int h = outimage.getHeight();

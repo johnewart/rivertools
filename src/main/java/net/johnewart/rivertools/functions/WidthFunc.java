@@ -1,7 +1,8 @@
 package net.johnewart.rivertools.functions;
 
-import net.johnewart.rivertools.ImageTools;
+import net.johnewart.rivertools.utils.ImageTools;
 import net.johnewart.rivertools.RiverWidth;
+import net.johnewart.rivertools.utils.ImageTools;
 import org.gearman.common.interfaces.GearmanFunction;
 import org.gearman.common.interfaces.GearmanFunctionCallback;
 import org.json.simple.JSONObject;

@@ -1,5 +1,6 @@
 package net.johnewart.rivertools;
 
+import net.johnewart.rivertools.utils.ImageTools;
 import org.gearman.common.interfaces.GearmanFunctionCallback;
 
 import java.awt.Point;

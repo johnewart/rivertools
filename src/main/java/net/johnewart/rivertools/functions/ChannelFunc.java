@@ -2,7 +2,7 @@ package net.johnewart.rivertools.functions;
 
 import com.jhlabs.image.BlurFilter;
 import com.jhlabs.image.DespeckleFilter;
-import net.johnewart.rivertools.ImageTools;
+import net.johnewart.rivertools.utils.ImageTools;
 import net.johnewart.rivertools.RiverExtractor;
 import org.gearman.common.interfaces.GearmanFunction;
 import org.gearman.common.interfaces.GearmanFunctionCallback;

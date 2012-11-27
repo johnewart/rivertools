@@ -1,4 +1,4 @@
-package net.johnewart.rivertools;
+package net.johnewart.rivertools.utils;
 
 import java.awt.Color;
 import java.awt.Point;
