@@ -1,4 +1,4 @@
-package net.johnewart.rivertools;
+package net.johnewart.rivertools.analysis;
 
 import java.awt.Color;
 import java.awt.image.BufferedImage;

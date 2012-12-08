@@ -1,9 +1,8 @@
 package net.johnewart.rivertools.functions;
 
 import com.jhlabs.image.BlurFilter;
-import com.jhlabs.image.DespeckleFilter;
 import net.johnewart.rivertools.utils.ImageTools;
-import net.johnewart.rivertools.RiverExtractor;
+import net.johnewart.rivertools.analysis.RiverExtractor;
 import org.gearman.common.interfaces.GearmanFunction;
 import org.gearman.common.interfaces.GearmanFunctionCallback;
 import org.json.simple.JSONArray;
@@ -12,7 +11,6 @@ import org.json.simple.JSONValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;

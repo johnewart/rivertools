@@ -1,4 +1,4 @@
-package net.johnewart.rivertools;
+package net.johnewart.rivertools.analysis;
 
 import net.johnewart.rivertools.utils.ImageTools;
 import org.gearman.common.interfaces.GearmanFunctionCallback;

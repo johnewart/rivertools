@@ -81,8 +81,8 @@
         </dependency>
         <dependency>
             <groupId>org.gearman</groupId>
-            <artifactId>gearman-java</artifactId>
-            <version>0.8.2-SNAPSHOT</version>
+            <artifactId>java-gearman-service</artifactId>
+            <version>0.8.3-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
@@ -129,7 +129,7 @@
                     </instructions>
                 </configuration>
             </plugin>-->
-            <plugin>
+            <!--<plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.3</version>
                 <executions>
@@ -137,7 +137,7 @@
                         <id>dist-assembly</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal> <!-- that's all :) -->
+                            <goal>single</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -153,8 +153,8 @@
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
                 </configuration>
-            </plugin>
-            <plugin>
+            </plugin> -->
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
@@ -165,7 +165,7 @@
                         </manifest>
                     </archive>
                 </configuration>
-            </plugin>
+            </plugin>-->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -181,7 +181,6 @@
                 <configuration>
                   <executable>java</executable>
                   <mainClass>net.johnewart.rivertools.Extractor</mainClass>
-                  <argLine>-Xmx8000m</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -195,6 +194,16 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <transformers>
                                 <!-- This bit sets the main class for the executable jar as you otherwise -->
                                 <!-- would with the assembly plugin                                       -->

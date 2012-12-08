@@ -1,14 +1,12 @@
 package net.johnewart.rivertools.functions;
 
 import net.johnewart.rivertools.utils.ImageTools;
-import net.johnewart.rivertools.RiverWidth;
-import net.johnewart.rivertools.utils.ImageTools;
+import net.johnewart.rivertools.analysis.RiverWidth;
 import org.gearman.common.interfaces.GearmanFunction;
 import org.gearman.common.interfaces.GearmanFunctionCallback;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 
