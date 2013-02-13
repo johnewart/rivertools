@@ -1,14 +1,23 @@
 package net.johnewart.rivertools.functions;
 
+import net.johnewart.rivertools.core.ChannelMap;
+import net.johnewart.rivertools.core.ChannelWidthMap;
+import net.johnewart.rivertools.core.ImageMap;
+import net.johnewart.rivertools.core.Simulation;
+import net.johnewart.rivertools.factories.SimulationFactory;
 import net.johnewart.rivertools.utils.ImageTools;
 import net.johnewart.rivertools.analysis.RiverWidth;
 import org.gearman.common.interfaces.GearmanFunction;
 import org.gearman.common.interfaces.GearmanFunctionCallback;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created with IntelliJ IDEA.
@@ -22,25 +31,41 @@ public class WidthFunc implements GearmanFunction {
         try {
             String jsonData = new String(data);
             JSONObject run_params = (JSONObject) JSONValue.parse(jsonData);
-            String channel_image = (String) run_params.get("channel_image");
-            String channel_width_image = (String) run_params.get("channel_width_image");
-            Long start_x = (Long) run_params.get("start_x");
-            Long start_y = (Long) run_params.get("start_y");
+            Long simulationId = (Long)run_params.get("simulation_id");
+            Simulation simulation = SimulationFactory.loadFromAPI(simulationId);
+            ChannelWidthMap channelWidthMap = simulation.getChannelWidthMap();
+            ChannelMap channelMap = simulation.getChannelMap();
 
-            File in = new File(channel_image);
-            File out = new File(channel_width_image);
+            // This is stores as a JSON Array, parse it and convert to a set of points
+            JSONArray pointsArray = (JSONArray) JSONValue.parse(channelWidthMap.channel_width_points);
+            Set<Point> points = new HashSet();
 
-            System.err.println("Processing " + channel_image + " starting at (" + start_x + "," + start_y + ") and writing to " + channel_width_image + "... ");
-            RiverWidth rw = new RiverWidth(in);
+            for(int i = 0; i < pointsArray.size(); i++)
+            {
+                JSONObject point = (JSONObject)pointsArray.get(i);
+                Point p = new Point(
+                        ((Long)point.get("x")).intValue(),
+                        ((Long)point.get("y")).intValue()
+                );
+                points.add(p);
+            }
+
+            File in = new File(channelMap.filename);
+            File out = new File(channelWidthMap.filename);
+
+
+            System.err.println("Processing " + channelMap.filename + " starting at points (" + channelWidthMap.channel_width_points + ") and writing to " + channelWidthMap.filename + "... ");
+            RiverWidth rw = new RiverWidth(channelMap, points, channelWidthMap.image_natural_width,  channelWidthMap.image_natural_height);
             System.err.println("Loaded, processing...");
-            BufferedImage img = rw.computeWidth(start_x.intValue(), start_y.intValue(), callback);
+            BufferedImage img = rw.computeWidth(callback);
             System.err.println("Writing output file....");
-            //ImageIO.write(img, "tiff", out);
-            ImageTools.writeGeoTiffWithCoordinates(channel_image, img, channel_width_image);
+            ImageTools.writeGeoTiffWithCoordinates(channelMap.filename, img, channelWidthMap.filename);
 
-            return channel_width_image.getBytes();
+            ImageTools.writeThumbnail(img, channelMap.getFullThumbnailPath(), channelMap.getFullThumbnailWidth());
+            return channelWidthMap.filename.getBytes();
         }catch (Exception e) {
-            System.err.println("Error proccessing width: " + e.toString());
+            System.err.println("Error processing width: " + e.toString());
+            e.printStackTrace(System.err);
             return "Error".getBytes();
         }
     }

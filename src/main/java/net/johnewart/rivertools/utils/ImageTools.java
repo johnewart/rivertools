@@ -1,7 +1,6 @@
 package net.johnewart.rivertools.utils;
 
-import java.awt.Color;
-import java.awt.Point;
+import java.awt.*;
 import java.awt.image.BandedSampleModel;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
@@ -16,6 +15,11 @@ import java.io.IOException;
 import org.geotools.coverage.CoverageFactoryFinder;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
+import org.geotools.coverage.grid.GridGeometry2D;
+import org.geotools.coverage.grid.io.AbstractGridCoverage2DReader;
+import org.geotools.coverage.grid.io.AbstractGridFormat;
+import org.geotools.coverage.grid.io.GridFormatFinder;
+import org.geotools.factory.Hints;
 import org.geotools.gce.geotiff.GeoTiffReader;
 import org.geotools.gce.geotiff.GeoTiffWriter;
 import org.geotools.geometry.Envelope2D;
@@ -24,9 +28,18 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
+import javax.media.jai.Interpolation;
+import javax.media.jai.RenderedOp;
+import javax.media.jai.operator.ScaleDescriptor;
 
+import org.imgscalr.Scalr;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ImageTools {
+
+    final static String THUMBNAIL_FORMAT = "png";
+    final static Logger LOG = LoggerFactory.getLogger(ImageTools.class);
 
     public static BufferedImage deepCopy(BufferedImage bi) {
         ColorModel cm = bi.getColorModel();
@@ -53,17 +66,37 @@ public class ImageTools {
 
         try {
             System.out.println("Getting coordinates from: " + imageWithCoordinates + "...");
-            GeoTiffReader gr = new GeoTiffReader(new File(imageWithCoordinates), null);
+            /*GeoTiffReader gr = new GeoTiffReader(new File(imageWithCoordinates), null);
             GridCoverage2D coverage = gr.read(null);
             CoordinateReferenceSystem crs = coverage.getCoordinateReferenceSystem2D();
             Envelope2D env = coverage.getEnvelope2D();
+            */
 
-            GridCoverageFactory fac = CoverageFactoryFinder.getGridCoverageFactory(null);
-            GridCoverage2D gridCoverage = fac.create("Coordinates", imageToWrite, env);
+            File imageFile = new File(imageWithCoordinates);
 
+            AbstractGridFormat format = GridFormatFinder.findFormat(imageFile);
+            AbstractGridCoverage2DReader reader = format.getReader(imageFile);
+            GridCoverage2D coverage = reader.read(null);
+            Envelope2D env = coverage.getEnvelope2D();
+
+            GridCoverageFactory factory = new GridCoverageFactory(new Hints(Hints.FORCE_LONGITUDE_FIRST_AXIS_ORDER, Boolean.TRUE));
+
+            GridCoverage2D gridCoverage = factory.create("27", imageToWrite, env);
             System.out.println("Writing: " + outputFileName + "...");
-            GeoTiffWriter gw = new GeoTiffWriter(new File(outputFileName));
+            String tmpfilename = outputFileName + ".tmp";
+
+            File destinationImage = new File(outputFileName);
+            File tempImage = new File(tmpfilename);
+
+            GeoTiffWriter gw = new GeoTiffWriter(tempImage);
             gw.write(gridCoverage, null);
+
+            if(destinationImage.exists())
+            {
+                destinationImage.delete();
+            }
+
+            tempImage.renameTo(destinationImage);
 
             return true;
         } catch (IOException ioe) {
@@ -195,6 +228,26 @@ public class ImageTools {
         }
 
         return result;
+    }
+
+    public static void writeThumbnail(BufferedImage source, String dest, int dstWidth)
+    {
+        float xScale = (float) dstWidth / (float)source.getWidth();
+        int dstHeight = (int)(source.getHeight() * xScale);
+        float yScale = (float)dstHeight / (float) source.getHeight();
+
+
+        try {
+            LOG.debug("Writing thumbnail: " + dest + " of size: " + dstWidth + "x" + dstHeight);
+            File outputFile = new File(dest);
+            RenderedOp renderedOp = ScaleDescriptor.create(source, new Float(xScale), new Float(yScale),
+                    new Float(0.0f), new Float(0.0f), Interpolation.getInstance(Interpolation.INTERP_BICUBIC), null);
+            ImageIO.write(renderedOp.getAsBufferedImage(), THUMBNAIL_FORMAT, outputFile);
+            LOG.debug("Done!");
+
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+        }
     }
 
 }

@@ -1,18 +1,18 @@
 package net.johnewart.rivertools.analysis;
 
-import java.awt.Color;
+import com.jhlabs.image.DespeckleFilter;
+import com.sun.media.jai.codec.FileSeekableStream;
+import com.sun.media.jai.codec.SeekableStream;
+import net.johnewart.rivertools.utils.ImageTools;
+
+import javax.imageio.ImageIO;
+import javax.imageio.spi.IIORegistry;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-
-import com.jhlabs.image.DespeckleFilter;
-import com.sun.media.jai.codec.*;
-import net.johnewart.rivertools.utils.ImageTools;
-
-import javax.imageio.ImageIO;
-import javax.imageio.spi.IIORegistry;
 
 
 

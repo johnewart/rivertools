@@ -1,6 +1,8 @@
 package net.johnewart.rivertools.functions;
 
 import com.jhlabs.image.BlurFilter;
+import net.johnewart.rivertools.core.Simulation;
+import net.johnewart.rivertools.factories.SimulationFactory;
 import net.johnewart.rivertools.utils.ImageTools;
 import net.johnewart.rivertools.analysis.RiverExtractor;
 import org.gearman.common.interfaces.GearmanFunction;
@@ -34,13 +36,12 @@ public class ChannelFunc implements GearmanFunction {
         try {
             String jsonData = new String(data);
             JSONObject run_params = (JSONObject) JSONValue.parse(jsonData);
-            String geotiff_image = (String) run_params.get("geotiff_image");
-            String channel_image = (String) run_params.get("channel_image");
-            String tile_path = (String) run_params.get("tile_path");
-            JSONArray ortho_tiles = (JSONArray) run_params.get("ortho_tiles");
+            Long simulationId = (Long)run_params.get("simulation_id");
+            Simulation simulation = SimulationFactory.loadFromAPI(simulationId);
 
-            int tile_width = ((Long) run_params.get("tile_width")).intValue();
-            int tile_height = ((Long) run_params.get("tile_height")).intValue();
+            // TODO: calculate these from images...
+            int tile_width = 5000;
+            int tile_height = 5000;
 
             System.err.println("Processing job!");
 
@@ -51,8 +52,8 @@ public class ChannelFunc implements GearmanFunction {
             Vector<Integer> easts = new Vector<Integer>();
             Vector<Integer> norths = new Vector<Integer>();
 
-            for (int i = 0; i < ortho_tiles.size(); i++) {
-                String tile = (String) ortho_tiles.get(i);
+            for (int i = 0; i < simulation.ortho_tile_files.size(); i++) {
+                String tile = simulation.ortho_tile_files.get(i);
                 Matcher m = tile_regex.matcher(tile);
                 if (m.find()) {
                     norths.add(Integer.parseInt(m.group(1)));
@@ -60,6 +61,9 @@ public class ChannelFunc implements GearmanFunction {
                 }
 
             }
+
+            int tileWidth = easts.size();
+            int tileHeight = norths.size();
 
             int max_north = Collections.max(norths);
             int min_north = Collections.min(norths);
@@ -73,20 +77,21 @@ public class ChannelFunc implements GearmanFunction {
             int w = (tile_width * ((max_east - min_east) + 1));
             int h = (tile_height * ((max_north - min_north) + 1));
             BufferedImage combined = new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB);
+            BufferedImage img = null;
+            RiverExtractor riverExtractor;
 
-            for (int i = 0; i < ortho_tiles.size(); i++) {
-                String tile = (String) ortho_tiles.get(i);
-                String ortho_tile = tile_path + "/" + tile + ".tif";
+            for (int i = 0; i < simulation.ortho_tile_files.size(); i++) {
+                String ortho_tile = simulation.ortho_tile_files.get(i);
                 System.err.println("Processing tile #" + i + ": " + ortho_tile);
 
-                callback.sendStatus(i, ortho_tiles.size());
+                callback.sendStatus(i, simulation.ortho_tile_files.size());
 
                 try {
-                    File in = new File(ortho_tile);
-                    RiverExtractor re = new RiverExtractor(in);
-                    BufferedImage img = re.extractChannels();
+                    riverExtractor = new RiverExtractor(new File(ortho_tile));
+                    img = riverExtractor.extractChannels();
 
-                    Matcher m = tile_regex.matcher(tile);
+                    String[] tilePathParts = ortho_tile.split("/");
+                    Matcher m = tile_regex.matcher(tilePathParts[tilePathParts.length - 1]);
                     // TODO: Fix this, it's probably really slow.... :(
                     if (m.find()) {
                         int north = Integer.parseInt(m.group(1));
@@ -94,13 +99,14 @@ public class ChannelFunc implements GearmanFunction {
                         int xorigin = Math.abs(min_east - east) * tile_height;
                         int yorigin = Math.abs(max_north - north) * tile_height;
                         System.out.println("Origin X: " + xorigin + " Y: " + yorigin);
+                        Color c;
 
                         for (int y = 0; y < img.getHeight(); y++) {
                             int pixel_y = yorigin + y;
                             for (int x = 0; x < img.getWidth(); x++) {
                                 int pixel_x = xorigin + x;
                                 try {
-                                    Color c = new Color(img.getRGB(x, y) & 0x00ffffff);
+                                    c = new Color(img.getRGB(x, y) & 0x00ffffff);
                                     combined.setRGB(pixel_x, pixel_y, c.getRGB());
                                 } catch (ArrayIndexOutOfBoundsException ex) {
                                     System.out.println("Failed to set (" + pixel_x + ", " + pixel_y + ")");
@@ -125,12 +131,15 @@ public class ChannelFunc implements GearmanFunction {
             bf.filter(combined, combined);
 
             //ImageIO.write(combined, "TIF", new File(channel_image));
-            ImageTools.writeGeoTiffWithCoordinates(geotiff_image, combined, channel_image);
-            return channel_image.getBytes();
+            ImageTools.writeGeoTiffWithCoordinates(simulation.getAerialMap().filename, combined, simulation.getChannelMap().filename);
+            //ImageTools.writeThumbnail(combined, simulation.getChannelMap().getFullThumbnailPath(), simulation.getChannelMap().getFullThumbnailWidth());
+
+            return simulation.getChannelMap().filename.getBytes();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return "Error".getBytes();
         }
 
     }
+
 }
