@@ -4,16 +4,18 @@ import org.gearman.GearmanFunctionCallback;
 import org.gearman.GearmanServer;
 import org.gearman.GearmanWorker;
 
-public class RiverExtractionWorker implements GearmanFunction { 
-  public static void main(String... args) {
+public class RiverExtractionWorker { 
+  public RiverExtractionWorker() {
       Gearman gearman = Gearman.createGearman();
       GearmanServer server = gearman.createGearmanServer( "localhost", 4730);
       GearmanWorker worker = gearman.createGearmanWorker();
-      worker.addFunction("channel_map", new RiverExtractionWorker());
+      worker.addFunction("channel_map", new ChannelFunc());
       worker.addServer(server);
   }
- 
-  @Override
+}
+
+class ChannelFunc implements GearmanFunction {
+
   public byte[] work(String function, byte[] data, GearmanFunctionCallback callback) throws Exception {
     return data;
   } 

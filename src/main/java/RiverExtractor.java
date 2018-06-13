@@ -1,35 +1,28 @@
-import java.io.File;
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.IOException;
-import java.awt.Frame;
 import java.awt.Graphics2D;
 import java.awt.Point;
-import java.awt.image.*;
+import java.awt.image.BandedSampleModel;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.DataBuffer;
+import java.awt.image.DataBufferInt;
+import java.awt.image.Raster;
+import java.awt.image.WritableRaster;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
-import javax.imageio.*;
-import javax.media.jai.widget.ScrollingImagePanel;
-import javax.media.jai.NullOpImage;
-import javax.media.jai.OpImage;
+import javax.imageio.ImageIO;
 
-import com.jhlabs.image.*;
-
-import com.sun.media.jai.codec.SeekableStream;
-import com.sun.media.jai.codec.FileSeekableStream;
-import com.sun.media.jai.codec.TIFFDecodeParam;
-import com.sun.media.jai.codec.ImageDecoder;
-import com.sun.media.jai.codec.ImageCodec;
+import com.jhlabs.image.DespeckleFilter;
 
 public class RiverExtractor { 
 
-  private String tilePath, outputPath; 
+ private File tile; 
 
-  public RiverExtractor(String tilePath, String outputPath)
+  public RiverExtractor(File tile)
   {
-    this.tilePath = tilePath; 
-    this.outputPath = outputPath; 
+    this.tile = tile; 
   }
 
   private BufferedImage deepCopy(BufferedImage bi) {
@@ -48,28 +41,13 @@ public class RiverExtractor {
      return image;
   }
 
-  public void extractChannels(String tilename)
+  public BufferedImage extractChannels()
   {
       try { 
-        File file = new File(this.tilePath + "/" + tilename);
-        SeekableStream s = new FileSeekableStream(file);
-
-        TIFFDecodeParam param = null;
-
-        ImageDecoder dec = ImageCodec.createImageDecoder("tiff", s, param);
-
-        System.out.println("Number of images in this TIFF: " + dec.getNumPages());
-        BufferedImage bi = ImageIO.read(file);
+        BufferedImage bi = ImageIO.read(tile);
         BufferedImage dest = new BufferedImage(bi.getWidth(),bi.getHeight(),BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g2 = dest.createGraphics();
         g2.drawImage(bi, 0, 0, null);
-
-        /*
-        ColorConvertOp op = new ColorConvertOp(
-                          bi.getColorModel().getColorSpace(),
-                          dest.getColorModel().getColorSpace(),null);
-        op.filter(bi,dest);
-        */
 
         ByteArrayOutputStream ostr = new ByteArrayOutputStream(); 
         ImageIO.write(dest, "tiff", new File("export.tif")); 
@@ -166,11 +144,10 @@ public class RiverExtractor {
           df.filter(filtered, filtered);
         }
 
-        ImageIO.write(outimage, "tiff", new File("entropy.tif")); 
-        ImageIO.write(filtered, "tiff", new File("entropy-filtered.tif")); 
-
+        return filtered; 
       } catch (IOException ioe) { 
         System.out.println("oops!");
+        return null;
       }
     
   }

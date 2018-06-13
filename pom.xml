@@ -1,8 +1,6 @@
 <project>
    <modelVersion>4.0.0</modelVersion>
-   <groupId>net.johnewart.entropy</groupId>
-   <artifactId>entropy</artifactId>
-   <version>1</version>
+   <groupId>net.johnewart</groupId>
    <dependencies>
       <dependency>
         <groupId>javax.media.jai</groupId>
@@ -64,4 +62,6 @@
        </plugin>
       </plugins>
     </build>
+    <artifactId>rivertools</artifactId>
+    <version>0.1</version>
 </project>
