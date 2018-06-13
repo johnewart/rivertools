@@ -1,6 +1,5 @@
 package net.johnewart.rivertools.core;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.io.ParseException;
@@ -8,6 +7,7 @@ import com.vividsolutions.jts.io.WKTReader;
 import net.johnewart.rivertools.factories.AerialMapFactory;
 import net.johnewart.rivertools.factories.ChannelMapFactory;
 import net.johnewart.rivertools.factories.ChannelWidthMapFactory;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.geotools.geometry.jts.JTSFactoryFinder;
 
 import java.util.List;

@@ -1,10 +1,14 @@
 package net.johnewart.rivertools.core;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import net.johnewart.rivertools.utils.ImageTools;
+import org.codehaus.jackson.annotate.JsonProperty;
 import org.gearman.common.interfaces.GearmanFunctionCallback;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -49,6 +53,15 @@ public class ChannelMap extends ImageMap {
             pixels = ImageTools.dilate(pixels);
             System.err.println("Dilating.");
             pixels = ImageTools.dilate(pixels);
+
+            try {
+                BufferedImage outimage =
+                        ImageTools.convert2DIntToARGB(pixels);
+                ImageIO.write(outimage, "TIF", new File("/tmp/bwchannels.png"));
+                System.err.println("Wrote /tmp/bwchannels.jpg");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
             for(java.awt.Point startingPoint : startingPoints)
             {
@@ -103,7 +116,7 @@ public class ChannelMap extends ImageMap {
     }
 
     // TODO: remove the callback from here, makes it a little kludgy - status variable / thread?
-    public int[][] computeWidthMap(Set<Point> channelPoints, GearmanFunctionCallback callback)
+    public int[][] computeWidthMap(Set<Point> channelPoints, GearmanWorker worker)
     {
         dirty = true;
 

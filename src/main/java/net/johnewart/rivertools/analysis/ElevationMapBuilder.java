@@ -26,16 +26,21 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ElevationMapBuilder {
     private Simulation simulation;
     final static Logger LOG = LoggerFactory.getLogger(ElevationMapBuilder.class);
-
+    private final AtomicInteger counter = new AtomicInteger(0);
     public ElevationMapBuilder(Simulation simulation)
     {
         this.simulation = simulation;
     }
 
+
+    public ElevationMapBuilder() {
+        super();    //To change body of overridden methods use File | Settings | File Templates.
+    }
 
     public BufferedImage process()
     {
@@ -92,7 +97,7 @@ public class ElevationMapBuilder {
             int[][] elevationMap = widthPixels.clone();
 
             // Generate locality where size -> ~6ft
-            LASHashTable lasHashTable = new LASHashTable(lasReader, origin, 1000);
+            LASHashTable lasHashTable = new LASHashTable(lasReader, origin, 5000);
 
             Point startPoint = simulation.getStartPoint();
             Point endPoint = simulation.getEndPoint();
@@ -101,111 +106,43 @@ public class ElevationMapBuilder {
             int startY = (int)(Math.abs(startPoint.getY() - origin.getY()) / pixelHeight);
             int endX   = (int)((endPoint.getX() - origin.getX()) / pixelWidth);
             int endY   = (int)(Math.abs(endPoint.getY() - origin.getY()) / pixelHeight);
-            int width  = channelPixels[0].length;
-            int height = channelPixels.length;
+
+            //startX = 1250;
+            //startY = 5800;
+            java.awt.Point startPixel = new java.awt.Point(startX, startY);
+            java.awt.Point endPixel = new java.awt.Point(endX, endY);
+
 
             Set<java.awt.Point> startingPoints = new HashSet<>();
-            startingPoints.add(new java.awt.Point(startX, startY));
-            startingPoints.add(new java.awt.Point(endX, endY));
-            Set<java.awt.Point> channelPoints = channelMap.findChannelPoints(startingPoints);
+            startingPoints.add(startPixel);
+            startingPoints.add(endPixel);
 
-            // Perform simple DFS search to find shortest path from start to end
-            Deque<java.awt.Point> pointStack = new LinkedList<>();
-            HashSet<java.awt.Point> visitedPoints = new HashSet<>();
-            HashSet<java.awt.Point> consideredPoints = new HashSet<>();
-            LinkedList<java.awt.Point> visitOrder = new LinkedList<>();
-
-            boolean finished = false;
-            int blackPixel = channelMap.getBlackPixel();
-            pointStack.add(new java.awt.Point(startX, startY));
-
-            while(!finished && !pointStack.isEmpty()) {
-                java.awt.Point p = pointStack.removeFirst();
-
-                // Add ourselves to the list of visited places
-                visitOrder.addFirst(p);
-                visitedPoints.add(p);
-
-                java.awt.Point nextPoint = null;
-                float lowestCost = Float.MAX_VALUE;
-
-                if(p.getX() == endPoint.getX() && p.getY() == endPoint.getY())
-                {
-                    finished = true;
-                } else {
-
-                    HashMap<Float, java.awt.Point> neighbors = new HashMap<>();
-                    // Augment DFS with most-likely candidate (i.e don't go backwards first)
-                    for (int xoff = -1; xoff <= 1; xoff++) {
-                        for (int yoff = -1; yoff <= 1; yoff++) {
-                            if (!(xoff == 0 && yoff == 0)) {
-                                int nx = p.x + xoff;
-                                int ny = p.y + yoff;
-                                // Cost is the distance from the next point to the destination * 5
-                                int dX = nx - endX;
-                                int dY = ny - endY;
-                                float cost = (float)(dX*dX)+(dY*dY);
-
-                                if ( (nx >= 0 && nx < width && ny >= 0 && ny < height) &&
-                                     (channelPixels[ny][nx] == 0) )
-                                {
-                                    java.awt.Point currentPoint = new java.awt.Point(nx, ny);
-                                    neighbors.put(cost, currentPoint);
-                                }
-                            }
-                        }
-                    }
-
-
-                    if(neighbors.keySet().size() == 0)
-                    {
-                        // Nobody else to visit, end of the line
-                        Set<java.awt.Point> pointNeighbors;
-                        do {
-                            // Back up a bit, take ourselves off the path stack
-                            visitOrder.removeFirst();
-                            pointNeighbors = new HashSet();
-                            // See who was last on the stack
-                            java.awt.Point prevPoint = visitOrder.getFirst();
-                            // Get all the neighbors
-                            for (int xoff = -1; xoff <= 1; xoff++) {
-                                for (int yoff = -1; yoff <= 1; yoff++) {
-                                    if (!(xoff == 0 && yoff == 0)) {
-                                        int nx = prevPoint.x + xoff;
-                                        int ny = prevPoint.y + yoff;
-                                        pointNeighbors.add(new java.awt.Point(nx, ny));
-                                    }
-                                }
-                            }
-                            // Continue while the current top's neighbors are all already one's we've
-                            // visited.
-                        } while(visitedPoints.containsAll(pointNeighbors));
-                    } else {
-                        Float[] keys = neighbors.keySet().toArray(new Float[0]);
-                        Arrays.sort(keys);
-                        for(int j = keys.length - 1; j >= 0; j--)
-                        {
-                            if(!consideredPoints.contains(neighbors.get(keys[j])))
-                            {
-                                pointStack.addFirst(neighbors.get(keys[j]));
-                                consideredPoints.add(neighbors.get(keys[j]));
-                            }
-                        }
-                    }
-                }
+            // Make sure start and end are black...
+            if(channelPixels[endPixel.y][endPixel.x] != 0 || channelPixels[startPixel.y][startPixel.x] != 0)
+            {
+                LOG.error("Houston we have a problem...");
             }
 
-            if(!finished)
+            Set<java.awt.Point> channelPoints = channelMap.findChannelPoints(startingPoints);
+
+            HashSet<java.awt.Point> visited = new HashSet<>();
+
+            LinkedList<java.awt.Point> path = findPath(startPixel, endPixel, channelPixels, visited);
+
+            if(path != null)
             {
-                LOG.debug("Didn't find a path from start to finish...");
-            } else {
                 LOG.debug("Found path: ");
-                for(java.awt.Point p : visitOrder)
+                for(java.awt.Point p : path)
                 {
                     double lon = origin.getX() + (p.getX() * pixelWidth);
                     double lat = origin.getY() - (p.getY() * pixelHeight);
-                    double elevation = lasHashTable.getElevation(lon, lat);
-                    LOG.debug("X: " + lon + " Y: " + lat + " Z: " + elevation);
+                    Double elevation = lasHashTable.getElevation(lon, lat);
+                    if(elevation != null)
+                    {
+                        LOG.debug("X: " + lon + " Y: " + lat + " Z: " + elevation);
+                    } else {
+                        LOG.debug("Couldn't find elevation for: " + lon + "," + lat);
+                    }
                 }
             }
 
@@ -269,9 +206,64 @@ public class ElevationMapBuilder {
         return result;
     }
 
-    public LinkedList<java.awt.Point> findPath(java.awt.Point start, java.awt.Point end, int[][] graph)
+    public LinkedList<java.awt.Point> findPath(java.awt.Point start, java.awt.Point end, int[][] graph, Set<java.awt.Point> visited)
     {
+        LinkedList result = null;
+        counter.incrementAndGet();
+        int width  = graph[0].length;
+        int height = graph.length;
 
+        if(start.x == end.x && start.y == end.y)
+        {
+            result = new LinkedList<java.awt.Point>();
+            result.add(start);
+        } else {
+            java.awt.Point next = null;
+
+            visited.add(start);
+
+            HashMap<Float, java.awt.Point> neighbors = new HashMap<>();
+            // Augment DFS with most-likely candidate (i.e don't go backwards first)
+            for (int xoff = -1; xoff <= 1; xoff++) {
+                for (int yoff = -1; yoff <= 1; yoff++) {
+                    if (!(xoff == 0 && yoff == 0)) {
+                        int nx = start.x + xoff;
+                        int ny = start.y + yoff;
+                        // Cost is the distance from the next point to the destination * 5
+                        int dX = nx - end.x;
+                        int dY = ny - end.y;
+                        float cost = (float)(dX*dX)+(dY*dY);
+
+                        if ( (nx >= 0 && nx < width && ny >= 0 && ny < height) &&
+                                (graph[ny][nx] == 0) )
+                        {
+                            java.awt.Point currentPoint = new java.awt.Point(nx, ny);
+                            if(!visited.contains(currentPoint))
+                                neighbors.put(cost, currentPoint);
+                        }
+                    }
+                }
+            }
+
+            if(neighbors.keySet().size() != 0)
+            {
+                Float[] keys = neighbors.keySet().toArray(new Float[0]);
+                Arrays.sort(keys);
+                for(int j = 0; j < keys.length; j++)
+                {
+                    next = neighbors.get(keys[j]);
+                    result = findPath(next, end, graph, visited);
+                    if( result != null) {
+                        result.addFirst(start);
+                        // Return immediately, we have found the end...
+                        return result;
+                    }
+                    // Otherwise, carry on checking other neighbors
+                }
+            }
+        }
+
+        return result;
     }
 
 
@@ -342,10 +334,10 @@ public class ElevationMapBuilder {
             // TODO: Backwards X/Y not quite sure why yet...
             for(LASReader.PointRecord pointRecord : lasReader.readAllPointRecords())
             {
-                lasMinX = Math.min(lasMinX, pointRecord.getY());
-                lasMaxX = Math.max(lasMaxX, pointRecord.getY());
-                lasMinY = Math.min(lasMinY, pointRecord.getX());
-                lasMaxY = Math.max(lasMaxY, pointRecord.getX());
+                lasMinY = Math.min(lasMinY, pointRecord.getY());
+                lasMaxY = Math.max(lasMaxY, pointRecord.getY());
+                lasMinX = Math.min(lasMinX, pointRecord.getX());
+                lasMaxX = Math.max(lasMaxX, pointRecord.getX());
             }
 
             minX = lasMinX;
@@ -409,8 +401,8 @@ public class ElevationMapBuilder {
                 {
                     count++;
                     // TODO: These are swapped, not sure why. Need to fix but for now want to make this work.
-                    double py = pointRecord.getX();
-                    double px = pointRecord.getY();
+                    double py = pointRecord.getY();
+                    double px = pointRecord.getX();
 
                     int x = (int)(px * LON_LAT_SCALE) - xOffset;
                     int y = (int)(py * LON_LAT_SCALE) - yOffset;

@@ -11,19 +11,17 @@
 
 
     <properties>
-        <jackson.version>2.1.1</jackson.version>
         <slf4j.version>1.7.2</slf4j.version>
         <logback.version>1.0.7</logback.version>
-        <geotools.version>9.0-M0</geotools.version>
+        <geotools.version>12.0</geotools.version>
     </properties>
 
 
     <repositories>
         <repository>
-            <id>opengeo</id>
-            <name>OpenGEO.org</name>
-            <layout>default</layout>
-            <url>http://repo.opengeo.org/</url>
+            <id>osgeo</id>
+            <name>Open Source Geospatial Foundation Repository</name>
+            <url>http://download.osgeo.org/webdav/geotools/</url>
         </repository>
         <repository>
             <id>tomgibara</id>
@@ -94,8 +92,8 @@
         </dependency>
         <dependency>
             <groupId>org.gearman</groupId>
-            <artifactId>java-gearman-service</artifactId>
-            <version>0.8.3-SNAPSHOT</version>
+            <artifactId>gearman-java</artifactId>
+            <version>0.6.0</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.json-simple</groupId>
@@ -131,6 +129,31 @@
             <groupId>org.imgscalr</groupId>
             <artifactId>imgscalr-lib</artifactId>
             <version>4.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>1.9.13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>1.9.13</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>17.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>1.9.5</version>
+        </dependency>
+        <dependency>
+            <groupId>net.johnewart.gearman</groupId>
+            <artifactId>gearman-client</artifactId>
+            <version>0.8.0-SNAPSHOT</version>
         </dependency>
     </dependencies>
     <build>

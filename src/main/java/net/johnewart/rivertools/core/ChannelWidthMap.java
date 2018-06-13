@@ -1,6 +1,6 @@
 package net.johnewart.rivertools.core;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * Created with IntelliJ IDEA.

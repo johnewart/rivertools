@@ -175,6 +175,7 @@ public class ImageTools {
         final int height = image.getHeight();
         final boolean hasAlphaChannel = image.getAlphaRaster() != null;
 
+        // TODO: This doesn't seem quite right...
         int[][] result = new int[height][width];
         if (hasAlphaChannel) {
             System.err.println("Alpha channel image...");
@@ -219,10 +220,12 @@ public class ImageTools {
 
         for (int row = 0; row < result.length; row++) {
             for (int col = 0; col < result[0].length; col++) {
-                if (result[row][col] == blackPixel) {
+                int rgb = image.getRGB(col, row);
+                Color c = new Color(rgb);
+                if (c.getRed() < 20) {
                     result[row][col] = 0;
                 } else {
-                    result[row][col] = 1;
+                    result[row][col] = 255;
                 }
             }
         }

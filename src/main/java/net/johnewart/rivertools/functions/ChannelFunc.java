@@ -1,13 +1,15 @@
 package net.johnewart.rivertools.functions;
 
 import com.jhlabs.image.BlurFilter;
+import com.jhlabs.image.GaussianFilter;
+import net.johnewart.gearman.common.Job;
+import net.johnewart.gearman.common.events.WorkEvent;
+import net.johnewart.gearman.common.interfaces.GearmanFunction;
+import net.johnewart.gearman.common.interfaces.GearmanWorker;
+import net.johnewart.rivertools.analysis.RiverExtractor;
 import net.johnewart.rivertools.core.Simulation;
 import net.johnewart.rivertools.factories.SimulationFactory;
 import net.johnewart.rivertools.utils.ImageTools;
-import net.johnewart.rivertools.analysis.RiverExtractor;
-import org.gearman.common.interfaces.GearmanFunction;
-import org.gearman.common.interfaces.GearmanFunctionCallback;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 import org.slf4j.Logger;
@@ -32,7 +34,14 @@ public class ChannelFunc implements GearmanFunction {
 
     final static Logger logger = LoggerFactory.getLogger(ChannelFunc.class);
 
-    public byte[] work(String function, byte[] data, GearmanFunctionCallback callback) throws Exception {
+    //public byte[] work(String function, byte[] data, GearmanFunctionCallback callback) throws Exception {
+
+    @Override
+    public byte[] process(WorkEvent workEvent) {
+        byte[] data = workEvent.job.getData();
+        final Job job = workEvent.job;
+        final GearmanWorker worker = workEvent.worker;
+
         try {
             String jsonData = new String(data);
             JSONObject run_params = (JSONObject) JSONValue.parse(jsonData);
@@ -84,7 +93,7 @@ public class ChannelFunc implements GearmanFunction {
                 String ortho_tile = simulation.ortho_tile_files.get(i);
                 System.err.println("Processing tile #" + i + ": " + ortho_tile);
 
-                callback.sendStatus(i, simulation.ortho_tile_files.size());
+                worker.sendStatus(job, i, simulation.ortho_tile_files.size());
 
                 try {
                     riverExtractor = new RiverExtractor(new File(ortho_tile));
@@ -117,6 +126,7 @@ public class ChannelFunc implements GearmanFunction {
                     }
 
                     System.err.println("Done!");
+                    worker.sendStatus(job, i+1, simulation.ortho_tile_files.size());
 
                 } catch (Exception e) {
                     System.err.println("Couldn't process file: " + e.toString());
@@ -126,20 +136,24 @@ public class ChannelFunc implements GearmanFunction {
             }
 
             BlurFilter bf = new BlurFilter();
+            GaussianFilter gf = new GaussianFilter(25.0f);
 
-            System.err.println("Blurring 3x3...");
-            bf.filter(combined, combined);
+            System.err.println("Blurring (Gaussian 25.0)...");
+            gf.filter(combined, combined);
 
             //ImageIO.write(combined, "TIF", new File(channel_image));
+            System.err.println("Writing results to " + simulation.getChannelMap().filename);
             ImageTools.writeGeoTiffWithCoordinates(simulation.getAerialMap().filename, combined, simulation.getChannelMap().filename);
             //ImageTools.writeThumbnail(combined, simulation.getChannelMap().getFullThumbnailPath(), simulation.getChannelMap().getFullThumbnailWidth());
 
-            return simulation.getChannelMap().filename.getBytes();
+            return "OK".getBytes();
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
             return "Error".getBytes();
         }
 
     }
+
+
 
 }

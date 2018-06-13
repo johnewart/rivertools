@@ -1,5 +1,9 @@
 package net.johnewart.rivertools.functions;
 
+import net.johnewart.gearman.common.Job;
+import net.johnewart.gearman.common.events.WorkEvent;
+import net.johnewart.gearman.common.interfaces.GearmanFunction;
+import net.johnewart.gearman.common.interfaces.GearmanWorker;
 import net.johnewart.rivertools.core.ChannelMap;
 import net.johnewart.rivertools.core.ChannelWidthMap;
 import net.johnewart.rivertools.core.ImageMap;
@@ -7,8 +11,6 @@ import net.johnewart.rivertools.core.Simulation;
 import net.johnewart.rivertools.factories.SimulationFactory;
 import net.johnewart.rivertools.utils.ImageTools;
 import net.johnewart.rivertools.analysis.RiverWidth;
-import org.gearman.common.interfaces.GearmanFunction;
-import org.gearman.common.interfaces.GearmanFunctionCallback;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -27,7 +29,13 @@ import java.util.Set;
  * To change this template use File | Settings | File Templates.
  */
 public class WidthFunc implements GearmanFunction {
-    public byte[] work(String function, byte[] data, GearmanFunctionCallback callback) throws Exception {
+    @Override
+    public byte[] process(WorkEvent workEvent) {
+        final Job job = workEvent.job;
+        final GearmanWorker worker = workEvent.worker;
+
+        byte[] data = job.getData();
+
         try {
             String jsonData = new String(data);
             JSONObject run_params = (JSONObject) JSONValue.parse(jsonData);
@@ -57,7 +65,7 @@ public class WidthFunc implements GearmanFunction {
             System.err.println("Processing " + channelMap.filename + " starting at points (" + channelWidthMap.channel_width_points + ") and writing to " + channelWidthMap.filename + "... ");
             RiverWidth rw = new RiverWidth(channelMap, points, channelWidthMap.image_natural_width,  channelWidthMap.image_natural_height);
             System.err.println("Loaded, processing...");
-            BufferedImage img = rw.computeWidth(callback);
+            BufferedImage img = rw.computeWidth(worker);
             System.err.println("Writing output file....");
             ImageTools.writeGeoTiffWithCoordinates(channelMap.filename, img, channelWidthMap.filename);
 

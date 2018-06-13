@@ -1,5 +1,6 @@
 package net.johnewart.rivertools.analysis;
 
+import net.johnewart.gearman.common.interfaces.GearmanWorker;
 import net.johnewart.rivertools.core.ChannelMap;
 import net.johnewart.rivertools.utils.ImageTools;
 import org.gearman.common.interfaces.GearmanFunctionCallback;
@@ -27,7 +28,7 @@ public class RiverWidth {
         startingPoints = points;
     }
 
-    public BufferedImage computeWidth(GearmanFunctionCallback callback) {
+    public BufferedImage computeWidth(GearmanWorker worker) {
 
         if (this.channelMap != null) {
             try {
@@ -39,7 +40,7 @@ public class RiverWidth {
                 // to process, then they are a disjointed set and can be
                 // processed in parallel
                 BufferedImage outimage =
-                        ImageTools.convert2DIntToARGB(channelMap.computeWidthMap(channelPoints, callback));
+                        ImageTools.convert2DIntToARGB(channelMap.computeWidthMap(channelPoints, worker));
 
                 return outimage;
             } catch (Exception e) {

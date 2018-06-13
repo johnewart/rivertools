@@ -1,8 +1,10 @@
 package net.johnewart.rivertools.core;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import net.johnewart.rivertools.utils.ImageTools;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -19,6 +21,8 @@ import java.util.Iterator;
  * Time: 3:12 PM
  */
 public class ImageMap {
+    final static Logger LOG = LoggerFactory.getLogger(ImageMap.class);
+
     @JsonProperty
     public String filename;
 
@@ -83,14 +87,18 @@ public class ImageMap {
                 this.image = ImageIO.read(imageFile);
                 this.width = this.image.getWidth();
                 this.height = this.image.getHeight();
-                System.err.println("Width: " + width + " Height: " + height);
+
+                LOG.debug("File: " + this.filename);
+                LOG.debug("Width: " + width);
+                LOG.debug("Height: " + height);
+
 
                 if (filetype.equals("png")) {
                     blackPixel = pngBlack;
-                    System.err.println("Processing a PNG file, black pixels are " + pngBlack);
+                    LOG.debug("Processing a PNG file, black pixels are " + pngBlack);
                 } else {
                     blackPixel = tiffBlack;
-                    System.err.println("Processing a TIFF file, black pixels are " + tiffBlack);
+                    LOG.debug("Processing a TIFF file, black pixels are " + tiffBlack);
                 }
             } catch (IOException ioe) {
                 this.image = null;
